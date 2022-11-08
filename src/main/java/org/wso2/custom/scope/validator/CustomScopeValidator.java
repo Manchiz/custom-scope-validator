@@ -222,10 +222,6 @@ public class CustomScopeValidator extends JDBCScopeValidator {
                     validScopes.add(scope);
                 }
             }
-
-        } else {
-            //Need to address (No role ? > Auth or NOT)******************************
-            return validScopes;
         }
         return validScopes;
     }
