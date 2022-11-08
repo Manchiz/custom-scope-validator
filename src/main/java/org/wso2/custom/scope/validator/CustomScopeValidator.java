@@ -61,6 +61,10 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         if (!validScopes.isEmpty()){
             tokReqMsgCtx.setScope(validScopes.toArray(new String[0]));
+
+            if (log.isDebugEnabled()) {
+                log.debug("Unable to find and valid scopes for the user");
+            }
         }
 
         return true;
@@ -78,6 +82,10 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         if (!validScopes.isEmpty()){
             authzReqMessageContext.setApprovedScope(validScopes.toArray(new String[0]));
+
+            if (log.isDebugEnabled()) {
+                log.debug("Unable to find and valid scopes for the user");
+            }
         }
 
         return true;
@@ -125,7 +133,7 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         } else {
             userRoles = getUserRoles(user);
         }
-        
+
         if (ArrayUtils.isNotEmpty(userRoles)) {
             for(String scope : requestedScopes){
 
@@ -149,6 +157,10 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
                 if ((isScopeValid(scope, tenantId)) && (isScopeValid(scope, tenantId)) ){
                     validScopes.add(scope);
+
+                    if (log.isDebugEnabled()) {
+                        log.debug(scope + "Scope added to the validScope list");
+                    }
                 }
             }
         }
