@@ -1,4 +1,5 @@
 package org.wso2.custom.scope.validator.internal;
+
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.user.core.service.RealmService;
 
