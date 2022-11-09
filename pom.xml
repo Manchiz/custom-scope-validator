@@ -36,6 +36,7 @@
 
         <commons-lang.wso2.version>2.6.0.wso2v1</commons-lang.wso2.version>
 
+
         <xmlunit>1.1</xmlunit>
     </properties>
 
@@ -86,13 +87,13 @@
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.core</artifactId>
-            <version>${carbon.identity.framework.version.range}</version>
+            <version>${carbon.identity.framework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.mgt</artifactId>
-            <version>${carbon.identity.framework.version.range}</version>
+            <version>${carbon.identity.framework.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.axis2.wso2</groupId>
@@ -100,6 +101,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>-->
+<!--            <artifactId>org.wso2.carbon.identity.oauth</artifactId>-->
+<!--            <version>6.4.60</version>-->
+<!--        </dependency>-->
+
+        <!--        <dependency>-->
+<!--            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>-->
+<!--            <artifactId>org.wso2.carbon.identity.oauth</artifactId>-->
+<!--            <version>6.10.13</version>-->
+<!--        </dependency>-->
 
     </dependencies>
 
@@ -140,7 +153,7 @@
                             org.wso2.carbon.user.core.service,
                             org.wso2.carbon.identity.oauth2.*,
                             org.wso2.carbon.CarbonConstants,
-                            org.wso2.carbon.identity.oauth
+<!--                            org.wso2.carbon.identity.oauth-->
                         </Import-Package>
                         <Export-Package>
                             !org.wso2.custom.scope.validator.internal,
@@ -148,6 +161,14 @@
                         </Export-Package>
 <!--                        <DynamicImport-Package>*</DynamicImport-Package>-->
                     </instructions>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>
