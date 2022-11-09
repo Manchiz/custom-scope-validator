@@ -3,6 +3,7 @@ package org.wso2.custom.scope.validator;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.CarbonConstants;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
@@ -30,30 +31,36 @@ import org.wso2.carbon.identity.oauth2.bean.Scope;
 import org.wso2.carbon.identity.oauth2.dao.OAuthTokenPersistenceFactory;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
 import org.wso2.carbon.user.api.UserStoreManager;
+import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import org.wso2.carbon.identity.oauth2.validators.JDBCScopeValidator;
-import org.wso2.custom.scope.validator.internal.ServiceComponent;
-//import org.wso2.custom.scope.validator.internal.CustomScopeValidatorDataHolder;
+import org.wso2.custom.scope.validator.internal.ServiceComponentHolder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * A custom scope validator
+
+  In the default scope validator (Role based scope validator) if the requested scopes do not exactly match the scopes
+  bind to the user role, the authentication request will be terminated.
+
+  But this custom scope validator can complete the authentication process only if the client app requests the exact same
+  scope as the one that is bind to the user role.
+ */
 public class CustomScopeValidator extends JDBCScopeValidator {
 
     Log log = LogFactory.getLog(CustomScopeValidator.class);
 
-    public static final String CHECK_ROLES_FROM_SAML_ASSERTION = "checkRolesFromSamlAssertion";
-    public static final String RETRIEVE_ROLES_FROM_USERSTORE_FOR_SCOPE_VALIDATION =
-            "retrieveRolesFromUserStoreForScopeValidation";
     private static final String SCOPE_VALIDATOR_NAME = "Custom scope validator";
     private static final String OPENID = "openid";
     private static final String ATTRIBUTE_SEPARATOR = FrameworkUtils.getMultiAttributeSeparator();
-
 
     @Override
     public boolean validateScope(OAuthTokenReqMessageContext tokReqMsgCtx) throws
@@ -64,26 +71,12 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         validScopes = validateScope(tokReqMsgCtx.getScope(), tokReqMsgCtx.getAuthorizedUser(),
                 tokReqMsgCtx.getOauth2AccessTokenReqDTO().getClientId());
 
-        if (!validScopes.isEmpty()){
-            tokReqMsgCtx.setScope(validScopes.toArray(new String[0]));
+        tokReqMsgCtx.setScope(validScopes.toArray(new String[0]));
+
+        if (validScopes.isEmpty() && log.isDebugEnabled()) {
+            log.debug("Unable to find any valid scopes for the user");
         }
-
         return true;
-
-//        try {
-//            validScopes = validateScope(tokReqMsgCtx.getScope(), tokReqMsgCtx.getAuthorizedUser(),
-//                    tokReqMsgCtx.getOauth2AccessTokenReqDTO().getClientId());
-//
-//            if (!validScopes.isEmpty()){
-//                tokReqMsgCtx.setScope(validScopes.toArray(new String[0]));
-//                return true;
-//            }
-//
-//        } catch (UserStoreException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        return false;
     }
 
     @Override
@@ -96,25 +89,12 @@ public class CustomScopeValidator extends JDBCScopeValidator {
                 authzReqMessageContext.getAuthorizationReqDTO().getUser(),
                 authzReqMessageContext.getAuthorizationReqDTO().getConsumerKey());
 
-        if (!validScopes.isEmpty()){
-            authzReqMessageContext.setApprovedScope(validScopes.toArray(new String[0]));
-        }
+        authzReqMessageContext.setApprovedScope(validScopes.toArray(new String[0]));
 
+        if (!validScopes.isEmpty() && log.isDebugEnabled()) {
+            log.debug("Unable to find any valid scopes for the user");
+        }
         return true;
-//        try {
-//            validScopes = validateScope(authzReqMessageContext.getAuthorizationReqDTO().getScopes(),
-//                    authzReqMessageContext.getAuthorizationReqDTO().getUser(),
-//                    authzReqMessageContext.getAuthorizationReqDTO().getConsumerKey());
-//        } catch (UserStoreException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        if (validScopes != null){
-//            //set msgcontext
-//            authzReqMessageContext.setApprovedScope(validScopes.toArray(new String[0]));
-//            return true;
-//        }
-//        return false;
     }
 
     /**
@@ -132,31 +112,10 @@ public class CustomScopeValidator extends JDBCScopeValidator {
             throws UserStoreException, IdentityOAuth2Exception {
 
 
-        List<String> validScopes = new ArrayList<>();
+        List<String> authorizedScopes = new ArrayList<>();
         String[] userRoles = null;
         int tenantId = getTenantId(user);
-//        if(ArrayUtils.contains(requestedScopes, OPENID)) {
-//            validScopes.add(OPENID);
-//            requestedScopes = (String[]) ArrayUtils.removeElement(requestedScopes, OPENID);
-//        }
 
-        // Remove OIDC scopes from the list if exists.
-//        try {
-//            String[] oidcScopes = OAuth2ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
-//            for (String oidcScope : oidcScopes) {
-//                validScopes.add(oidcScope);
-//                requestedScopes = (String[]) ArrayUtils.removeElement(requestedScopes, oidcScope);
-//            }
-//
-//        } catch (IdentityOAuthAdminException e) {
-//            log.error("Unable to obtain OIDC scopes list.");
-//            return new ArrayList<String>();
-//        }
-//
-//        //If the token is not requested for specific scopes, return true
-//        if (ArrayUtils.isEmpty(requestedScopes)) {
-//            return validScopes;
-//        }
         /*
         Here we handle scope validation for federated user and local user separately.
         For local users - user store is used to get user roles.
@@ -181,53 +140,39 @@ public class CustomScopeValidator extends JDBCScopeValidator {
             userRoles = getUserRoles(user);
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("Assigned roles for user " + user + " : " + Arrays.toString(userRoles));
+            log.debug("Requested scopes for user " + user + " : " + Arrays.toString(requestedScopes));
+        }
 
         if (ArrayUtils.isNotEmpty(userRoles)) {
-//            for (String scope : requestedScopes) {
-//                if (!isScopeValid(scope, tenantId)) {
-//                    // If the scope is not registered return false.
-//                    log.error("Requested scope " + scope + " is invalid");
-//                    return false;
-//                }
-//                if (!isUserAuthorizedForScope(scope, userRoles, tenantId)) {
-//                    if (log.isDebugEnabled()) {
-//                        log.debug("User " + user.getUserName() + "in not authorised for scope " + scope);
-//                    }
-//                    return false;
-//                }
-//            }
-//            String[] validScopes;
-//            List<String> validScopes = new ArrayList<>();
-            for(String scope : requestedScopes){
 
-                // Remove openid scope from the list if available
-                if(Objects.equals(scope, OPENID)) {
-                    validScopes.add(OPENID);
-                    requestedScopes = (String[]) ArrayUtils.removeElement(requestedScopes, OPENID);
-                }
+            // Remove OIDC scopes from the list if exists.
+            try {
+                String[] oidcScopes = OAuth2ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
+                for (String oidcScope : oidcScopes) {
 
-                // Remove OIDC scopes from the list if exists.
-                try {
-                    if (ArrayUtils.contains(OAuth2ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames(), scope )) {
-                        validScopes.add(scope);
-                        requestedScopes = (String[]) ArrayUtils.removeElement(requestedScopes, scope);
+                    if (ArrayUtils.contains(requestedScopes, oidcScope)) {
+                        requestedScopes = (String[]) ArrayUtils.removeElement(requestedScopes, oidcScope);
+                        authorizedScopes.add(oidcScope);
                     }
-
-                } catch (IdentityOAuthAdminException e) {
-                    log.error("Unable to obtain OIDC scopes list.");
-                    return validScopes;
                 }
 
-                if ((isScopeValid(scope, tenantId)) && (isScopeValid(scope, tenantId)) ){
-                    validScopes.add(scope);
-                }
+            } catch (IdentityOAuthAdminException e) {
+                log.error("Unable to obtain OIDC scopes list.", e);
             }
 
-        } else {
-            //Need to address (No role ? > Auth or NOT)******************************
-            return validScopes;
+            for (String scope : requestedScopes) {
+                if ((isScopeValid(scope, tenantId)) && (isUserAuthorizedForScope(scope, userRoles, tenantId))) {
+                    authorizedScopes.add(scope);
+
+                    if (log.isDebugEnabled()) {
+                        log.debug(scope + " Scope added to the authorizedScopes list");
+                    }
+                }
+            }
         }
-        return validScopes;
+        return authorizedScopes;
     }
 
     private int getTenantId(User user) throws UserStoreException {
@@ -263,7 +208,7 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         String[] userRoles;
         boolean tenantFlowStarted = false;
 
-        RealmService realmService = ServiceComponent.getRealmService();
+        RealmService realmService = ServiceComponentHolder.getInstance().getRealmService();
         int tenantId = getTenantId(user);
         try {
             if (tenantId != MultitenantConstants.SUPER_TENANT_ID) {
@@ -350,18 +295,79 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         try {
             scope = OAuthTokenPersistenceFactory.getInstance().getOAuthScopeDAO().getScopeByName(scopeName, tenantId);
         } catch (IdentityOAuth2ScopeServerException e) {
-            log.error("Error while retrieving scope with name :" + scopeName);
+            log.error("Error while retrieving scope with name :" + scopeName, e);
+        }
+
+        if (log.isDebugEnabled() && scope == null) {
+            log.debug(scopeName + " Scope is not valid under the tenant id: " + tenantId);
         }
 
         return scope != null;
     }
-//
-//    @Override
-//    public boolean validateScope(OAuth2TokenValidationMessageContext oAuth2TokenValidationMessageContext) {
-//
-//        return true;
-//    }
-//
+
+    private boolean isUserAuthorizedForScope(String scopeName, String[] userRoles, int tenantId)
+            throws IdentityOAuth2Exception {
+
+        Set<String> rolesOfScope = OAuthTokenPersistenceFactory.getInstance().getOAuthScopeDAO().
+                getBindingsOfScopeByScopeName(scopeName, tenantId);
+
+        if (CollectionUtils.isEmpty(rolesOfScope)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Did not find any roles associated to the scope " + scopeName);
+            }
+            return true;
+        }
+
+        if (log.isDebugEnabled()) {
+            StringBuilder logMessage = new StringBuilder("Found roles of scope '" + scopeName + "' ");
+            logMessage.append(String.join(",", rolesOfScope));
+            log.debug(logMessage.toString());
+        }
+
+        if (ArrayUtils.isEmpty(userRoles)) {
+            if (log.isDebugEnabled()) {
+                log.debug("User does not have required roles for scope " + scopeName);
+            }
+            return false;
+        }
+
+        //Check if the user still has a valid role for this scope.
+        Set<String> scopeRoles = new HashSet<>(rolesOfScope);
+        rolesOfScope.retainAll(Arrays.asList(userRoles));
+
+        if (rolesOfScope.isEmpty()) {
+            // when the role is an internal one, check if the user has valid role
+            boolean validInternalUserRole = validateInternalUserRoles(scopeRoles, userRoles);
+
+            if (validInternalUserRole) {
+                return true;
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("User does not have required roles for scope " + scopeName);
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean validateInternalUserRoles(Set<String> scopeRoles, String[] userRoles) {
+
+        for (String role : scopeRoles) {
+            int index = role.indexOf(CarbonConstants.DOMAIN_SEPARATOR);
+            if (index > 0) {
+                String domain = role.substring(0, index);
+                if (UserCoreConstants.INTERNAL_DOMAIN.equalsIgnoreCase(domain)) {
+                    for (String userRole : userRoles) {
+                        if (role.equalsIgnoreCase(userRole)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     @Override
     public String getValidatorName() {

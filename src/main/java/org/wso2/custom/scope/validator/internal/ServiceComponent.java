@@ -7,6 +7,8 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.user.core.service.RealmService;
+import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
+
 
 @Component(
         name = "org.wso2.custom.scope.validator",
@@ -15,6 +17,7 @@ import org.wso2.carbon.user.core.service.RealmService;
 public class ServiceComponent {
 
     private static Log log = LogFactory.getLog(ServiceComponent.class);
+
     private static RealmService realmService;
 
     @Reference(
@@ -28,17 +31,34 @@ public class ServiceComponent {
         if (log.isDebugEnabled()) {
             log.debug("Setting the Realm Service");
         }
-        this.realmService = realmService;
+        ServiceComponentHolder.getInstance().setRealmService(realmService);
     }
 
     protected void unsetRealmService(RealmService realmService) {
         if (log.isDebugEnabled()) {
             log.debug("UnSetting the Realm Service");
         }
-        this.realmService = null;
+        ServiceComponentHolder.getInstance().setRealmService(null);
     }
 
-    public static RealmService getRealmService() {
-        return realmService;
+    @Reference(
+            name = "user.oauthadminservice.default",
+            service = org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetOAuthAdminService"
+    )
+    protected void setOAuthAdminService(OAuthAdminServiceImpl oAuthAdminService) {
+        if (log.isDebugEnabled()) {
+            log.debug("Setting the oAuthAdminService Service");
+        }
+        ServiceComponentHolder.getInstance().setOAuthAdminService(oAuthAdminService);
+    }
+
+    protected void unsetOAuthAdminService(OAuthAdminServiceImpl oAuthAdminService) {
+        if (log.isDebugEnabled()) {
+            log.debug("UnSetting the oAuthAdminService Service");
+        }
+        ServiceComponentHolder.getInstance().setOAuthAdminService(null);
     }
 }
