@@ -111,7 +111,7 @@
                             !org.wso2.custom.scope.validator.internal,
                             org.wso2.custom.scope.validator.*; version="${project.version}",
                         </Export-Package>
-                        <DynamicImport-Package>*</DynamicImport-Package>
+<!--                        <DynamicImport-Package>*</DynamicImport-Package>-->
                     </instructions>
                 </configuration>
             </plugin>
