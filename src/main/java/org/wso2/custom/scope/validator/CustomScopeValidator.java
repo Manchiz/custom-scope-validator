@@ -141,8 +141,9 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Assigned roles for user " + user + " : " + Arrays.toString(userRoles));
-            log.debug("Requested scopes for user " + user + " : " + Arrays.toString(requestedScopes));
+            log.debug(String.format("Assigned roles for user %s are %s.", user, Arrays.toString(userRoles)));
+            log.debug(String.format("Requested scopes for user %s are %s.", user, Arrays.toString(requestedScopes)));
+
         }
 
         if (ArrayUtils.isNotEmpty(userRoles)) {
