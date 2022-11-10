@@ -18,9 +18,19 @@
     <packaging>bundle</packaging>
 
     <properties>
-        <commons.logging.version>1.2</commons.logging.version>
-        <multitenancy.version>4.8.1</multitenancy.version>
+        <commons.logging.version.range>[1.2.0,2.0.0)</commons.logging.version.range>
+        <commons-lang.wso2.version>2.6.0.wso2v1</commons-lang.wso2.version>
+
+        <!--Carbon Identity Framework Version-->
         <carbon.identity.framework.version>5.17.5</carbon.identity.framework.version>
+        <carbon.identity.framework.version.range>[5.14.67, 6.0.0]</carbon.identity.framework.version.range>
+
+        <!-- Identity Inbound Versions   -->
+        <identity.inbound.auth.oauth.version>6.4.2</identity.inbound.auth.oauth.version>
+
+        <!-- Carbon Kernel -->
+        <carbon.kernel.version>4.6.0</carbon.kernel.version>
+
         <xmlunit>1.1</xmlunit>
     </properties>
 
@@ -29,41 +39,38 @@
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
-            <version>5.25.24</version>
+            <version>${carbon.identity.framework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
             <artifactId>org.wso2.carbon.identity.oauth</artifactId>
+<!--            <version>${identity.inbound.auth.oauth.version}</version>-->
             <version>6.10.13</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.utils</artifactId>
-            <version>4.7.1</version>
+            <version>${carbon.kernel.version}</version>
         </dependency>
 
         <dependency>
             <groupId>commons-lang.wso2</groupId>
             <artifactId>commons-lang</artifactId>
+            <version>${commons-lang.wso2.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.user.core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wso2.eclipse.osgi</groupId>
-            <artifactId>org.eclipse.osgi.services</artifactId>
+            <version>${carbon.kernel.version}</version>
         </dependency>
 
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>${commons.logging.version}</version>
+            <version>${commons.logging.version.range}</version>
         </dependency>
 
         <dependency>
@@ -106,6 +113,14 @@
                             org.osgi.framework; version="${import.osgi.framework.version.range}",
                             org.osgi.service.component; version="${import.osgi.service.component.version.range}",
                             org.apache.commons.logging; version="${import.package.version.commons.logging}",
+                            org.wso2.carbon.identity.core.util,
+                            org.wso2.carbon.identity.application.authentication.framework,
+                            org.wso2.carbon.identity.application.authentication.framework.util,
+                            org.wso2.carbon.identity.application.authentication.framework.model,
+                            org.wso2.carbon.user.core,
+                            org.wso2.carbon.user.core.service,
+                            org.wso2.carbon.identity.oauth2.*,
+                            org.wso2.carbon.CarbonConstants,
                         </Import-Package>
                         <Export-Package>
                             !org.wso2.custom.scope.validator.internal,
@@ -113,6 +128,14 @@
                         </Export-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>
