@@ -24,7 +24,6 @@ import org.wso2.carbon.identity.oauth2.IdentityOAuth2ScopeServerException;
 import org.wso2.carbon.identity.oauth2.authz.OAuthAuthzReqMessageContext;
 import org.wso2.carbon.identity.oauth2.bean.Scope;
 import org.wso2.carbon.identity.oauth2.dao.OAuthTokenPersistenceFactory;
-import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
 import org.wso2.carbon.identity.oauth2.validators.JDBCScopeValidator;
@@ -150,7 +149,7 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
             // Remove OIDC scopes from the list if exists.
             try {
-                String[] oidcScopes = OAuth2ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
+                String[] oidcScopes = ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
                 for (String oidcScope : oidcScopes) {
 
                     if (ArrayUtils.contains(requestedScopes, oidcScope)) {
