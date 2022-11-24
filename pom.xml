@@ -1,14 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-    <parent>
-        <groupId>org.wso2.carbon</groupId>
-        <artifactId>carbon-kernel</artifactId>
-        <version>4.6.0</version>
-    </parent>
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.carbon.custom</groupId>
@@ -18,69 +10,34 @@
     <packaging>bundle</packaging>
 
     <properties>
+        <xmlunit>1.1</xmlunit>
         <commons.logging.version.range>[1.2.0,2.0.0)</commons.logging.version.range>
         <commons-lang.wso2.version>2.6.0.wso2v1</commons-lang.wso2.version>
+        <maven.scr.plugin.version>1.26.4</maven.scr.plugin.version>
+        <import.osgi.framework.version.range>[1.9,2.0)</import.osgi.framework.version.range>
+        <import.osgi.service.component.version.range>[1.2.0,2.0)</import.osgi.service.component.version.range>
+        <commons.collections.version.range>[3.2.2, 4.0.0)</commons.collections.version.range>
 
         <!--Carbon Identity Framework Version-->
         <carbon.identity.framework.version>5.17.5</carbon.identity.framework.version>
         <carbon.identity.framework.version.range>[5.14.67, 6.0.0]</carbon.identity.framework.version.range>
 
         <!-- Identity Inbound Versions   -->
-        <identity.inbound.auth.oauth.version>6.4.2</identity.inbound.auth.oauth.version>
+        <!--Here used the latest version including fix for "https://github.com/wso2/product-is/issues/10527" bug -->
+        <!--This is for only build purpose, but at the run time correct version will be used  since this fix
+             available with updated IS version -->
+        <identity.inbound.auth.oauth.version>6.10.13</identity.inbound.auth.oauth.version>
 
         <!-- Carbon Kernel -->
         <carbon.kernel.version>4.6.0</carbon.kernel.version>
-
-        <xmlunit>1.1</xmlunit>
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.wso2.carbon.identity.framework</groupId>
-            <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
-            <version>${carbon.identity.framework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
-            <artifactId>org.wso2.carbon.identity.oauth</artifactId>
-<!--            Here used the latest version including fix for "https://github.com/wso2/product-is/issues/10527" bug -->
-<!--            This is for only build purpose, but at the run time correct version will be used  since this fix
-                available with updated IS version -->
-            <version>6.10.13</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wso2.carbon</groupId>
-            <artifactId>org.wso2.carbon.utils</artifactId>
-            <version>${carbon.kernel.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang.wso2</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>${commons-lang.wso2.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wso2.carbon</groupId>
-            <artifactId>org.wso2.carbon.user.core</artifactId>
-            <version>${carbon.kernel.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>${commons.logging.version.range}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.wso2.carbon.identity.framework</groupId>
-            <artifactId>org.wso2.carbon.identity.core</artifactId>
-            <version>${carbon.identity.framework.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.mgt</artifactId>
@@ -92,53 +49,151 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
+            <artifactId>org.wso2.carbon.identity.oauth</artifactId>
+            <version>${identity.inbound.auth.oauth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang.wso2</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6.0.wso2v1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.logging</artifactId>
+            <version>4.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.core</artifactId>
+            <version>4.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.user.core</artifactId>
+            <version>4.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
+            <version>5.14.97</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.testutil</artifactId>
+            <version>5.14.97</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.core</artifactId>
+            <version>5.14.97</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.utils</artifactId>
+            <version>4.5.1</version>
+            <scope>provided</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.application.common</artifactId>
+            <version>${carbon.identity.framework.version}</version>
+        </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>wso2-nexus</id>
+            <name>WSO2 internal Repository</name>
+            <url>http://maven.wso2.org/nexus/content/groups/wso2-public/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+        </repository>
+
+        <repository>
+            <id>wso2.releases</id>
+            <name>WSO2 internal Repository</name>
+            <url>http://maven.wso2.org/nexus/content/repositories/releases/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+        </repository>
+
+        <repository>
+            <id>wso2.snapshots</id>
+            <name>Apache Snapshot Repository</name>
+            <url>http://maven.wso2.org/nexus/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+
+    </repositories>
 
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.6.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-scr-plugin</artifactId>
-                <version>${maven.scr.plugin.version}</version>
+                <version>1.24.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-scr-scrdescriptor</id>
+                        <goals>
+                            <goal>scr</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.4.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
-                        <Private-Package>org.wso2.custom.scope.validator.internal</Private-Package>
-                        <Import-Package>
-                            org.osgi.framework; version="${import.osgi.framework.version.range}",
-                            org.osgi.service.component; version="${import.osgi.service.component.version.range}",
-                            org.apache.commons.logging; version="${import.package.version.commons.logging}",
-                            org.wso2.carbon.identity.core.util,
-                            org.wso2.carbon.identity.application.authentication.framework,
-                            org.wso2.carbon.identity.application.authentication.framework.util,
-                            org.wso2.carbon.identity.application.authentication.framework.model,
-                            org.wso2.carbon.user.core,
-                            org.wso2.carbon.user.core.service,
-                            org.wso2.carbon.identity.oauth2.*,
-                            org.wso2.carbon.CarbonConstants,
-                        </Import-Package>
+                        <Private-Package>
+                            org.wso2.custom.scope.validator.internal
+                        </Private-Package>
                         <Export-Package>
                             !org.wso2.custom.scope.validator.internal,
                             org.wso2.custom.scope.validator.*; version="${project.version}",
                         </Export-Package>
+                        <Import-Package>
+                            org.osgi.framework; version="${import.osgi.framework.version.range}",
+                            org.osgi.service.component; version="${import.osgi.service.component.version.range}",
+                            org.apache.commons.collections.*; version="${commons.collections.version.range}",
+                        </Import-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

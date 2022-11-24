@@ -24,7 +24,6 @@ import org.wso2.carbon.identity.oauth2.IdentityOAuth2ScopeServerException;
 import org.wso2.carbon.identity.oauth2.authz.OAuthAuthzReqMessageContext;
 import org.wso2.carbon.identity.oauth2.bean.Scope;
 import org.wso2.carbon.identity.oauth2.dao.OAuthTokenPersistenceFactory;
-import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
 import org.wso2.carbon.identity.oauth2.validators.JDBCScopeValidator;
@@ -44,22 +43,18 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * A custom scope validator
-
-  In the default scope validator (Role based scope validator) if the requested scopes do not exactly match the scopes
-  bind to the user role, the authentication request will be terminated.
-
-  But this custom scope validator can complete the authentication process only if the client app requests the exact same
-  scope as the one that is bind to the user role.
+ * The custom scope validator extends the default JDBC scope validator to override its default behaviour of terminating
+ * the authentication flow if any unauthorized scopes were requested. This extended scope validator allows the
+ * authentication flow to complete for any scope request while dropping the scopes which are not authorized for the
+ * user based on roles assigned.
  */
 public class CustomScopeValidator extends JDBCScopeValidator {
 
-    Log log = LogFactory.getLog(CustomScopeValidator.class);
+    private static final Log log = LogFactory.getLog(CustomScopeValidator.class);
 
     private static final String SCOPE_VALIDATOR_NAME = "Custom scope validator";
     private static final String OPENID = "openid";
     private static final String ATTRIBUTE_SEPARATOR = FrameworkUtils.getMultiAttributeSeparator();
-
     private static final String GROUPS = "groups";
 
     @Override
@@ -107,7 +102,6 @@ public class CustomScopeValidator extends JDBCScopeValidator {
      * @throws UserStoreException      If were unable to get tenant or user roles.
      * @throws IdentityOAuth2Exception If were unable to get Identity provider.
      */
-
     private List<String> validateScope(String[] requestedScopes, AuthenticatedUser user, String clientId)
             throws UserStoreException, IdentityOAuth2Exception {
 
@@ -148,9 +142,9 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         if (ArrayUtils.isNotEmpty(userRoles)) {
 
-            // Remove OIDC scopes from the list if exists.
+            // Allow OIDC scopes without role validation.
             try {
-                String[] oidcScopes = OAuth2ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
+                String[] oidcScopes = ServiceComponentHolder.getInstance().getOAuthAdminService().getScopeNames();
                 for (String oidcScope : oidcScopes) {
 
                     if (ArrayUtils.contains(requestedScopes, oidcScope)) {
@@ -176,6 +170,14 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         return authorizedScopes;
     }
 
+    /**
+     * Return Tenant ID for authenticated user.
+     *
+     * @param user Authenticated user.
+     * @return Tenant ID for authenticated user.
+     * @throws UserStoreException If were unable to get tenant for authenticated user.
+     */
+
     private int getTenantId(User user) throws UserStoreException {
 
         int tenantId = IdentityTenantUtil.getTenantId(user.getTenantDomain());
@@ -186,6 +188,14 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         return tenantId;
     }
+
+    /**
+     * Check whether federated user has associated federated users in locally.
+     *
+     * @param clientId Client ID.
+     * @return True is there associated account for federated user. False otherwise.
+     * @throws IdentityOAuth2Exception If were unable to get Service Provider or claim configuration for Service Provider.
+     */
 
     private boolean isSPAlwaysSendMappedLocalSubjectId(String clientId) throws IdentityOAuth2Exception {
 
@@ -202,6 +212,14 @@ public class CustomScopeValidator extends JDBCScopeValidator {
             throw new IdentityOAuth2Exception("Unable to find service provider for client id " + clientId);
         }
     }
+
+    /**
+     * Get a user role if the user is an associated federated user.
+     *
+     * @param user Authenticated user.
+     * @return user roles associated with authenticated user.
+     * @throws UserStoreException If were unable to get user roles associated with authenticated user.
+     */
 
     private String[] getUserRoles(User user) throws UserStoreException {
 
@@ -240,6 +258,14 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         return userRoles;
     }
 
+    /**
+     * Get a user role if the user is not an associated federated user.
+     *
+     * @param user Authenticated user.
+     * @return user roles associated with the authenticated user.
+     * @throws IdentityOAuth2Exception If were unable to get user roles associated with authenticated user.
+     */
+
     private String[] getUserRolesForNotAssociatedFederatedUser(AuthenticatedUser user)
             throws IdentityOAuth2Exception {
 
@@ -254,11 +280,18 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         mapped to the federated role of authenticated user.
          */
         List<String> valuesOfGroups = getValuesOfGroupsFromUserAttributes(user.getUserAttributes());
+        String localRole;
+
         if (CollectionUtils.isNotEmpty(valuesOfGroups)) {
             for (RoleMapping roleMapping : identityProvider.getPermissionAndRoleConfig().getRoleMappings()) {
                 if (roleMapping != null && roleMapping.getLocalRole() != null) {
-                    if (valuesOfGroups.contains(roleMapping.getLocalRole().getLocalRoleName())) {
-                        userRolesList.add(roleMapping.getLocalRole().getLocalRoleName());
+                    if(roleMapping.getLocalRole().getUserStoreId() != null){
+                        localRole = roleMapping.getLocalRole().getUserStoreId().toUpperCase().concat(CarbonConstants.DOMAIN_SEPARATOR).concat(roleMapping.getLocalRole().getLocalRoleName());
+                    } else {
+                        localRole = roleMapping.getLocalRole().getLocalRoleName();
+                    }
+                    if (valuesOfGroups.contains(localRole)) {
+                        userRolesList.add(localRole);
                     }
                 }
             }
@@ -277,6 +310,7 @@ public class CustomScopeValidator extends JDBCScopeValidator {
      * @param userAttributes User Attributes
      * @return User attribute map
      */
+
     private List<String> getValuesOfGroupsFromUserAttributes(Map<ClaimMapping, String> userAttributes) {
 
         if (MapUtils.isNotEmpty(userAttributes)) {
@@ -288,6 +322,13 @@ public class CustomScopeValidator extends JDBCScopeValidator {
         }
         return null;
     }
+
+    /**
+     * Get a user role if the user is not an associated federated user.
+     *
+     * @param scopeName requested scope.
+     * @return True, if the scope is valid. False otherwise.
+     */
 
     private boolean isScopeValid(String scopeName, int tenantId) {
 
@@ -305,6 +346,16 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         return scope != null;
     }
+
+    /**
+     * Validate scopes which bind with user roles.
+     *
+     * @param scopeName requested scope
+     * @param userRoles User roles
+     * @param tenantId  Tenant Id .
+     * @return True if the user has requested scope. False otherwise.
+     * @throws IdentityOAuth2Exception If were unable to valid the scope against the user.
+     */
 
     private boolean isUserAuthorizedForScope(String scopeName, String[] userRoles, int tenantId)
             throws IdentityOAuth2Exception {
@@ -332,7 +383,7 @@ public class CustomScopeValidator extends JDBCScopeValidator {
             return false;
         }
 
-        //Check if the user still has a valid role for this scope.
+        // Check if the user still has a valid role for this scope.
         Set<String> scopeRoles = new HashSet<>(rolesOfScope);
         rolesOfScope.retainAll(Arrays.asList(userRoles));
 
@@ -351,6 +402,14 @@ public class CustomScopeValidator extends JDBCScopeValidator {
 
         return true;
     }
+
+    /**
+     * This method used to validate scopes which bind with internal roles
+     *
+     * @param scopeRoles Roles in scope.
+     * @param userRoles  User roles
+     * @return True if the user has requested scope. False otherwise.
+     */
 
     private boolean validateInternalUserRoles(Set<String> scopeRoles, String[] userRoles) {
 
